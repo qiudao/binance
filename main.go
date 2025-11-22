@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -16,6 +17,9 @@ import (
 const (
 	BaseURL = "https://api.binance.com"
 )
+
+// 北京时间时区
+var BeijingLocation = time.FixedZone("CST", 8*3600)
 
 type Kline struct {
 	OpenTime                 int64
@@ -87,6 +91,92 @@ func GetKlines(symbol string, interval string, startTime, endTime int64, limit i
 	return klines, nil
 }
 
+// GetKlinesBatch 批量获取K线数据，支持超过1000条的请求
+func GetKlinesBatch(symbol string, interval string, totalLimit int) ([]Kline, error) {
+	if totalLimit <= 1000 {
+		return GetKlines(symbol, interval, 0, 0, totalLimit)
+	}
+
+	var allKlines []Kline
+	seen := make(map[int64]bool) // 用于去重
+	batchSize := 1000
+	batches := (totalLimit + batchSize - 1) / batchSize // 向上取整
+	var endTime int64 = 0 // 0表示当前时间
+
+	for i := 0; i < batches; i++ {
+		currentBatch := i + 1
+		fmt.Printf("正在获取第 %d/%d 批...\n", currentBatch, batches)
+
+		// 带重试的获取逻辑
+		var klines []Kline
+		var err error
+		maxRetries := 3
+
+		for retry := 0; retry < maxRetries; retry++ {
+			klines, err = GetKlines(symbol, interval, 0, endTime, batchSize)
+			if err == nil {
+				break
+			}
+
+			if retry < maxRetries-1 {
+				waitTime := time.Duration(retry+1) * time.Second
+				fmt.Printf("  请求失败，%v 后重试 (%d/%d)...\n", waitTime, retry+1, maxRetries)
+				time.Sleep(waitTime)
+			}
+		}
+
+		if err != nil {
+			return allKlines, fmt.Errorf("批次 %d 获取失败: %w", currentBatch, err)
+		}
+
+		if len(klines) == 0 {
+			fmt.Printf("  第 %d 批未获取到数据，停止\n", currentBatch)
+			break
+		}
+
+		// 去重并添加到结果集
+		addedCount := 0
+		for _, kline := range klines {
+			if !seen[kline.OpenTime] {
+				seen[kline.OpenTime] = true
+				allKlines = append(allKlines, kline)
+				addedCount++
+			}
+		}
+
+		fmt.Printf("  第 %d 批获取 %d 条，去重后添加 %d 条，累计 %d/%d 条\n",
+			currentBatch, len(klines), addedCount, len(allKlines), totalLimit)
+
+		// 如果已经获取足够数据，停止
+		if len(allKlines) >= totalLimit {
+			break
+		}
+
+		// 更新 endTime 为当前批次最早的时间 - 1ms（第一条是最早的）
+		if len(klines) > 0 {
+			earliestTime := klines[0].OpenTime
+			endTime = earliestTime - 1
+		}
+
+		// 添加延迟避免触发API限流（除了最后一批）
+		if i < batches-1 {
+			time.Sleep(200 * time.Millisecond)
+		}
+	}
+
+	// 按时间从新到旧排序（最新的在前面）
+	sort.Slice(allKlines, func(i, j int) bool {
+		return allKlines[i].OpenTime > allKlines[j].OpenTime
+	})
+
+	// 截取到指定数量
+	if len(allKlines) > totalLimit {
+		allKlines = allKlines[:totalLimit]
+	}
+
+	return allKlines, nil
+}
+
 func SaveToCSV(klines []Kline, filename string, symbol string, interval string) error {
 	// 确保目录存在
 	dir := filepath.Dir(filename)
@@ -96,31 +186,23 @@ func SaveToCSV(klines []Kline, filename string, symbol string, interval string) 
 		}
 	}
 
-	// 检查文件是否存在
-	fileExists := false
-	if _, err := os.Stat(filename); err == nil {
-		fileExists = true
-	}
-
-	// 以追加模式打开文件
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// 以覆盖模式创建文件（而不是追加模式）
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("打开文件失败: %w", err)
+		return fmt.Errorf("创建文件失败: %w", err)
 	}
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
-	// 如果文件是新创建的，写入表头
-	if !fileExists {
-		header := []string{
-			"交易对", "时间间隔", "开盘时间", "开盘价", "最高价", "最低价", "收盘价",
-			"成交量", "收盘时间", "成交额", "成交笔数", "主动买入量", "主动买入额",
-		}
-		if err := writer.Write(header); err != nil {
-			return fmt.Errorf("写入表头失败: %w", err)
-		}
+	// 写入表头
+	header := []string{
+		"交易对", "时间间隔", "开盘时间", "开盘价", "最高价", "最低价", "收盘价",
+		"成交量", "收盘时间", "成交额", "成交笔数", "主动买入量", "主动买入额",
+	}
+	if err := writer.Write(header); err != nil {
+		return fmt.Errorf("写入表头失败: %w", err)
 	}
 
 	// 写入数据
@@ -128,13 +210,13 @@ func SaveToCSV(klines []Kline, filename string, symbol string, interval string) 
 		record := []string{
 			symbol,
 			interval,
-			time.UnixMilli(kline.OpenTime).Format("2006-01-02 15:04:05"),
+			time.UnixMilli(kline.OpenTime).In(BeijingLocation).Format("2006-01-02 15:04:05"),
 			kline.Open,
 			kline.High,
 			kline.Low,
 			kline.Close,
 			kline.Volume,
-			time.UnixMilli(kline.CloseTime).Format("2006-01-02 15:04:05"),
+			time.UnixMilli(kline.CloseTime).In(BeijingLocation).Format("2006-01-02 15:04:05"),
 			kline.QuoteAssetVolume,
 			strconv.Itoa(kline.NumberOfTrades),
 			kline.TakerBuyBaseAssetVolume,
@@ -156,13 +238,14 @@ func main() {
 	output := flag.String("output", "", "输出CSV文件路径（不指定则打印到屏幕）")
 	flag.Parse()
 
-	klines, err := GetKlines(*symbol, *interval, 0, 0, *limit)
+	// 使用批量获取函数，自动处理超过1000条的情况
+	klines, err := GetKlinesBatch(*symbol, *interval, *limit)
 	if err != nil {
 		fmt.Printf("获取K线数据失败: %v\n", err)
 		return
 	}
 
-	fmt.Printf("成功获取 %d 条 %s %s K线数据\n", len(klines), *symbol, *interval)
+	fmt.Printf("\n成功获取 %d 条 %s %s K线数据\n", len(klines), *symbol, *interval)
 
 	// 如果指定了输出文件，保存到CSV
 	if *output != "" {
@@ -180,9 +263,9 @@ func main() {
 		if i >= 5 {
 			break
 		}
-		openTime := time.UnixMilli(kline.OpenTime).Format("2006-01-02 15:04:05")
-		closeTime := time.UnixMilli(kline.CloseTime).Format("2006-01-02 15:04:05")
-		fmt.Printf("时间: %s - %s\n", openTime, closeTime)
+		openTime := time.UnixMilli(kline.OpenTime).In(BeijingLocation).Format("2006-01-02 15:04:05")
+		closeTime := time.UnixMilli(kline.CloseTime).In(BeijingLocation).Format("2006-01-02 15:04:05")
+		fmt.Printf("时间: %s - %s (北京时间)\n", openTime, closeTime)
 		fmt.Printf("  开: %s, 高: %s, 低: %s, 收: %s, 量: %s\n",
 			kline.Open, kline.High, kline.Low, kline.Close, kline.Volume)
 		fmt.Printf("  成交笔数: %d\n\n", kline.NumberOfTrades)

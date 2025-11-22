@@ -1,4 +1,4 @@
-.PHONY: all build clean fetch-1m fetch-5m fetch-15m fetch-1h fetch-4h fetch-1d save-1m save-5m save-15m save-1h save-4h save-1d
+.PHONY: all build clean fetch-1m fetch-5m fetch-15m fetch-1h fetch-4h fetch-1d save-1m save-5m save-15m save-1h save-4h save-1d demo-indicators
 
 all: build
 
@@ -26,8 +26,8 @@ fetch-1d:
 
 # 保存数据到CSV文件
 save-1m:
-	go run main.go -interval 1m -output data/klines_1m.csv
-	#go run main.go -interval 1m -limit 500 -output data/klines_1m.csv
+	#go run main.go -interval 1m -output data/klines_1m.csv
+	go run main.go -interval 1m -limit 5000 -output data/klines_1m.csv
 
 save-5m:
 	go run main.go -interval 5m -output data/klines_5m.csv
@@ -43,6 +43,11 @@ save-4h:
 
 save-1d:
 	go run main.go -interval 1d -output data/klines_1d.csv
+
+# RSI/MACD 技术指标示例
+demo-indicators:
+	go run main.go -interval 1m -limit 5000 -output data/klines_1m.csv
+	go run examples/rsi_macd_demo.go
 
 clean:
 	rm -rf bin/ data/
