@@ -1,4 +1,4 @@
-.PHONY: all build clean fetch-1m fetch-5m fetch-15m fetch-1h fetch-4h fetch-1d save-1m save-5m save-15m save-1h save-4h save-1d demo-indicators
+.PHONY: all build clean fetch-1m fetch-5m fetch-15m fetch-1h fetch-4h fetch-1d save-1m save-5m save-15m save-1h save-4h save-1d demo-indicators divergence-5m divergence-15m
 
 all: build
 
@@ -27,7 +27,7 @@ fetch-1d:
 # 保存数据到CSV文件
 save-1m:
 	#go run main.go -interval 1m -output data/klines_1m.csv
-	go run main.go -interval 1m -limit 5000 -output data/klines_1m.csv
+	go run main.go -interval 1m -limit 50000 -output data/klines_1m.csv
 
 save-5m:
 	go run main.go -interval 5m -output data/klines_5m.csv
@@ -46,8 +46,18 @@ save-1d:
 
 # RSI/MACD 技术指标示例
 demo-indicators:
-	go run main.go -interval 1m -limit 5000 -output data/klines_1m.csv
+	go run main.go -interval 1m -limit 50000 -output data/klines_1m.csv
 	go run examples/rsi_macd_demo.go
+
+# 5分钟背离信号检测
+divergence-5m:
+	go run main.go -interval 5m -limit 10000 -output data/klines_5m.csv
+	go run examples/divergence_5m.go
+
+# 15分钟背离信号检测
+divergence-15m:
+	go run main.go -interval 15m -limit 10000 -output data/klines_15m.csv
+	go run examples/divergence_15m.go
 
 clean:
 	rm -rf bin/ data/

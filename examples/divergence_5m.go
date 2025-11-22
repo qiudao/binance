@@ -15,36 +15,42 @@ import (
 var BeijingLocation = time.FixedZone("CST", 8*3600)
 
 func main() {
-	// 读取CSV文件
-	csvFile := "data/klines_1m.csv"
+	// 读取5分钟CSV文件
+	csvFile := "data/klines_5m.csv"
 	klines, err := loadKlinesFromCSV(csvFile)
 	if err != nil {
 		fmt.Printf("读取CSV文件失败: %v\n", err)
+		fmt.Println("请先运行: make save-5m")
 		return
 	}
 
-	fmt.Printf("成功加载 %d 条K线数据\n\n", len(klines))
+	fmt.Printf("\n============ 5分钟K线背离信号检测 ============\n")
+	fmt.Printf("成功加载 %d 条5分钟K线数据\n\n", len(klines))
 
 	// 计算技术指标
 	fmt.Println("正在计算技术指标 (RSI14, MACD)...")
 	klinesWithIndicators := indicators.CalculateIndicators(klines)
 	if klinesWithIndicators == nil {
-		fmt.Println("数据不足，无法计算指标")
+		fmt.Println("数据不足，无法计算指标（至少需要50根K线）")
+		fmt.Println("请运行: make save-5m 获取更多数据")
 		return
 	}
 
 	fmt.Printf("指标计算完成！\n\n")
 
 	// 显示最后5根K线的指标
-	fmt.Println("=== 最后5根K线的指标 ===")
+	fmt.Println("=== 最近5根K线指标 ===")
 	printLastNIndicators(klinesWithIndicators, 5)
 
 	// 扫描交易信号
-	fmt.Println("\n=== 扫描交易信号 ===")
+	fmt.Println("\n=== 扫描5分钟交易信号 ===")
 	signals := indicators.ScanSignals(klinesWithIndicators)
 
 	if len(signals) == 0 {
 		fmt.Println("未发现符合条件的交易信号")
+		fmt.Println("\n信号条件：")
+		fmt.Println("  做多: MACD金叉 + 前10根K线RSI<30 + 前10根最低价作止损")
+		fmt.Println("  做空: MACD死叉 + 前10根K线RSI>70 + 前10根最高价作止损")
 		return
 	}
 
@@ -62,41 +68,61 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\n=== 统计 ===\n")
+	fmt.Printf("\n=== 信号统计 ===\n")
 	fmt.Printf("总信号数: %d\n", len(signals))
 	fmt.Printf("做多信号: %d\n", longCount)
 	fmt.Printf("做空信号: %d\n", shortCount)
 
-	// 检测背离信号
-	fmt.Println("\n=== 检测背离信号 ===")
+	// 检测背离信号（核心功能）
+	fmt.Println("\n========================================")
+	fmt.Println("=== 5分钟背离信号检测（强烈反转信号！）===")
+	fmt.Println("========================================")
+
 	divergences := indicators.DetectDivergence(signals)
 
 	if len(divergences) == 0 {
-		fmt.Println("未发现背离信号")
-		fmt.Println("\n说明：背离是指价格与技术指标走势相反的现象")
-		fmt.Println("  - 看涨背离：价格↓ 但 RSI/MACD↑ → 强烈买入信号")
-		fmt.Println("  - 看跌背离：价格↑ 但 RSI/MACD↓ → 强烈卖出信号")
+		fmt.Println("\n未发现背离信号")
+		fmt.Println("\n💡 什么是背离？")
+		fmt.Println("  背离是指价格走势与技术指标走势相反的现象，是强烈的趋势反转信号！")
+		fmt.Println()
+		fmt.Println("  🔺 看涨背离（底背离）：")
+		fmt.Println("     价格创新低↓ 但 RSI/MACD未创新低（反而上涨↑）")
+		fmt.Println("     → 说明：虽然价格在跌，但动能在增强 → 强烈买入信号！")
+		fmt.Println()
+		fmt.Println("  🔻 看跌背离（顶背离）：")
+		fmt.Println("     价格创新高↑ 但 RSI/MACD未创新高（反而下跌↓）")
+		fmt.Println("     → 说明：虽然价格在涨，但动能在减弱 → 强烈卖出信号！")
 	} else {
-		fmt.Printf("发现 %d 个背离信号（强烈反转信号！）：\n\n", len(divergences))
+		fmt.Printf("\n🎯 发现 %d 个背离信号（强烈反转信号！）\n\n", len(divergences))
 
 		bullishCount := 0
 		bearishCount := 0
 
-		for _, div := range divergences {
+		for i, div := range divergences {
+			fmt.Printf("【背离信号 #%d】\n", i+1)
 			fmt.Println(div.String())
 
+			// 根据背离类型显示建议
 			if div.Type == indicators.DivergenceBullish {
+				fmt.Println("  💡 建议: 强烈买入信号！考虑在 " + fmt.Sprintf("%.2f", div.SecondSignal.Price) + " 附近做多")
+				fmt.Println("  📍 止损: " + fmt.Sprintf("%.2f", div.SecondSignal.StopLoss))
 				bullishCount++
 			} else {
+				fmt.Println("  💡 建议: 强烈卖出信号！考虑在 " + fmt.Sprintf("%.2f", div.SecondSignal.Price) + " 附近做空")
+				fmt.Println("  📍 止损: " + fmt.Sprintf("%.2f", div.SecondSignal.StopLoss))
 				bearishCount++
 			}
+			fmt.Println()
 		}
 
-		fmt.Printf("\n=== 背离统计 ===\n")
-		fmt.Printf("看涨背离: %d 个（价格下跌，指标上涨 → 强烈买入信号！）\n", bullishCount)
-		fmt.Printf("看跌背离: %d 个（价格上涨，指标下跌 → 强烈卖出信号！）\n", bearishCount)
-		fmt.Printf("\n💡 背离信号强度高于普通信号，建议重点关注！\n")
+		fmt.Printf("=== 背离统计 ===\n")
+		fmt.Printf("🔺 看涨背离: %d 个 (价格↓ 指标↑ → 强烈买入信号)\n", bullishCount)
+		fmt.Printf("🔻 看跌背离: %d 个 (价格↑ 指标↓ → 强烈卖出信号)\n", bearishCount)
+		fmt.Printf("\n⚡ 注意：背离信号是最强烈的反转信号之一，建议重点关注！\n")
+		fmt.Printf("📊 在5分钟级别，背离信号可用于短线交易和波段操作\n")
 	}
+
+	fmt.Println("\n============================================")
 }
 
 // loadKlinesFromCSV 从CSV文件加载K线数据
@@ -177,7 +203,7 @@ func printLastNIndicators(klines []indicators.KlineWithIndicators, n int) {
 	}
 
 	fmt.Printf("%-20s %10s %10s %10s %10s %8s %10s %10s\n",
-		"时间", "开盘", "最高", "最低", "收盘", "RSI14", "MACD", "信号线")
+		"时间(北京)", "开盘", "最高", "最低", "收盘", "RSI14", "MACD", "信号线")
 	fmt.Println("---------------------------------------------------------------------------------------------------")
 
 	for i := start; i < len(klines); i++ {
@@ -186,9 +212,9 @@ func printLastNIndicators(klines []indicators.KlineWithIndicators, n int) {
 
 		crossInfo := ""
 		if k.MacdCrossUp {
-			crossInfo = " [金叉]"
+			crossInfo = " [金叉↑]"
 		} else if k.MacdCrossDown {
-			crossInfo = " [死叉]"
+			crossInfo = " [死叉↓]"
 		}
 
 		fmt.Printf("%-20s %10.2f %10.2f %10.2f %10.2f %8.2f %10.4f %10.4f%s\n",
