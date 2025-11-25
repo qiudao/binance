@@ -1,4 +1,4 @@
-.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders analyze plot dashboard
+.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders download-klines sync-klines ls-klines web-server web-open analyze plot dashboard
 
 # 默认显示帮助
 .DEFAULT_GOAL := help
@@ -25,6 +25,15 @@ help:
 	@echo "  sync-orders        增量同步订单记录"
 	@echo "  ls-orders          列出所有文件"
 	@echo "  clean-orders       清理所有文件（需确认）"
+	@echo ""
+	@echo "📉 K线数据 (Klines)"
+	@echo "  download-klines    全量下载K线数据（默认XBTUSD 1d）"
+	@echo "  sync-klines        增量同步K线数据"
+	@echo "  ls-klines          列出K线文件"
+	@echo ""
+	@echo "🌐 Web界面 (Web Dashboard)"
+	@echo "  web-server         启动Web服务器（端口8080）"
+	@echo "  web-open           启动服务器并在浏览器打开"
 	@echo ""
 	@echo "📈 数据分析 (Analysis)"
 	@echo "  analyze            生成文本分析报告"
@@ -174,3 +183,35 @@ dashboard:
 	@echo ""
 	@echo "✓ 已生成: report/wallet_dashboard.html"
 	@echo "  在浏览器中打开查看"
+
+# ============================================================
+# K线数据 (Klines)
+# ============================================================
+
+download-klines:
+	@echo "📥 全量下载K线数据 (XBTUSD 1d)..."
+	@go run bitmex_klines.go --symbol XBTUSD --timeframe 1d
+
+sync-klines:
+	@echo "🔄 增量同步K线数据..."
+	@go run bitmex_klines.go --symbol XBTUSD --timeframe 1d --update
+
+ls-klines:
+	@echo "📄 K线数据文件:"
+	@ls -lh klines_*.csv klines_*.csv.bak 2>/dev/null || echo "  (无文件)"
+
+# ============================================================
+# Web界面 (Web Dashboard)
+# ============================================================
+
+web-server:
+	@echo "🌐 启动 Web 服务器..."
+	@echo "   访问: http://localhost:8080"
+	@echo "   按 Ctrl+C 停止服务器"
+	@echo ""
+	@go run web_server.go
+
+web-open:
+	@echo "🌐 启动 Web 服务器并打开浏览器..."
+	@(sleep 3 && xdg-open http://localhost:8080 2>/dev/null || open http://localhost:8080 2>/dev/null) &
+	@go run web_server.go

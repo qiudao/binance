@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitMEX Trading Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>📊 BitMEX Trading Dashboard</h1>
+            <div class="controls">
+                <select id="symbol-select" class="control">
+                    <option value="XBTUSD">XBTUSD</option>
+                    <option value="ETHUSD">ETHUSD</option>
+                </select>
+                <select id="timeframe-select" class="control">
+                    <option value="1d">1 Day</option>
+                    <option value="1h">1 Hour</option>
+                </select>
+                <button id="refresh-btn" class="control">🔄 Refresh</button>
+            </div>
+        </header>
+
+        <!-- 账户信息栏 -->
+        <div class="account-bar">
+            <div class="metric">
+                <span class="label">Balance</span>
+                <span class="value" id="balance">-- BTC</span>
+            </div>
+            <div class="metric">
+                <span class="label">Today PNL</span>
+                <span class="value" id="today-pnl">-- BTC</span>
+            </div>
+            <div class="metric">
+                <span class="label">Total PNL</span>
+                <span class="value" id="total-pnl">-- BTC</span>
+            </div>
+            <div class="metric">
+                <span class="label">Win Rate</span>
+                <span class="value" id="win-rate">--%</span>
+            </div>
+            <div class="metric">
+                <span class="label">Total Trades</span>
+                <span class="value" id="total-trades">--</span>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 图表区域 -->
+            <div class="chart-section">
+                <div id="chart"></div>
+            </div>
+
+            <!-- 侧边栏 -->
+            <div class="sidebar">
+                <!-- 当前仓位 -->
+                <div class="panel">
+                    <h3>📊 Current Positions</h3>
+                    <div id="positions-container" class="positions-grid">
+                        <div class="empty-state">No open positions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部订单区域 -->
+        <div class="orders-section">
+            <!-- 未成交订单 -->
+            <div class="panel">
+                <h3>📋 Pending Orders (<span id="pending-count">0</span>)</h3>
+                <div class="table-container">
+                    <table id="pending-orders-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-orders-body">
+                            <tr>
+                                <td colspan="7" class="empty-state">No pending orders</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 已成交订单 -->
+            <div class="panel">
+                <h3>✅ Recent Executions (<span id="exec-count">0</span>)</h3>
+                <div class="table-container">
+                    <table id="executions-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="executions-body">
+                            <tr>
+                                <td colspan="6" class="empty-state">No executions</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/chart.js"></script>
+    <script src="js/orders.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
