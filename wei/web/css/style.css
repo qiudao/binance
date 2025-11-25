@@ -304,3 +304,143 @@ td {
 .loading {
     animation: pulse 1.5s ease-in-out infinite;
 }
+
+/* Diagnose Panel */
+.diagnose-btn {
+    background: #8b949e !important;
+    font-weight: bold;
+}
+
+.diagnose-btn:hover {
+    background: #58a6ff !important;
+}
+
+.diagnose-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 900px;
+    max-height: 80vh;
+    background: #161b22;
+    border: 2px solid #30363d;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+}
+
+.diagnose-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #30363d;
+}
+
+.diagnose-header h2 {
+    margin: 0;
+    color: #58a6ff;
+    font-size: 20px;
+}
+
+.close-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    background: #30363d;
+    color: #f85149;
+}
+
+.diagnose-content {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.diagnose-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #0d1117;
+    border-radius: 6px;
+    border-left: 3px solid #30363d;
+}
+
+.diagnose-section h3 {
+    margin: 0 0 12px 0;
+    color: #58a6ff;
+    font-size: 16px;
+}
+
+.diagnose-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #21262d;
+}
+
+.diagnose-item:last-child {
+    border-bottom: none;
+}
+
+.diagnose-label {
+    color: #8b949e;
+}
+
+.diagnose-value {
+    font-weight: bold;
+}
+
+.diagnose-value.success {
+    color: #3fb950;
+}
+
+.diagnose-value.error {
+    color: #f85149;
+}
+
+.diagnose-value.warning {
+    color: #d29922;
+}
+
+.diagnose-logs {
+    background: #0d1117;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.copy-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #238636;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #2ea043;
+}

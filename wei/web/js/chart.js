@@ -49,24 +49,34 @@ function initChart() {
 
 // 加载K线数据
 async function loadChartData(symbol, timeframe) {
+    console.log(`加载K线数据: ${symbol} ${timeframe}`);
     try {
         currentSymbol = symbol;
         currentTimeframe = timeframe;
 
+        console.log('  - 请求 API...');
         const klines = await API.getKlines(symbol, timeframe);
 
+        console.log(`  - 收到 ${klines ? klines.length : 0} 条K线数据`);
+
         if (!klines || klines.length === 0) {
-            console.error('No kline data available');
+            console.error('  ❌ 没有K线数据!');
+            alert(`没有找到 ${symbol} ${timeframe} 的K线数据`);
             return;
         }
 
+        console.log('  - 设置图表数据...');
         candlestickSeries.setData(klines);
+        console.log('  ✓ K线图渲染完成');
 
         // 加载订单标记
+        console.log('  - 加载订单标记...');
         await loadOrderMarkers(symbol);
+        console.log('  ✓ 订单标记完成');
 
     } catch (error) {
-        console.error('Failed to load chart data:', error);
+        console.error('  ❌ 加载K线失败:', error);
+        alert('加载K线数据失败: ' + error.message);
     }
 }
 

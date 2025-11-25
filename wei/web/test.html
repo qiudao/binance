@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>API Test</title>
+</head>
+<body>
+    <h1>BitMEX API 测试</h1>
+
+    <h2>1. K线数据</h2>
+    <button onclick="testKlines()">测试 K线 API</button>
+    <pre id="klines-result"></pre>
+
+    <h2>2. 订单数据</h2>
+    <button onclick="testOrders()">测试订单 API</button>
+    <pre id="orders-result"></pre>
+
+    <h2>3. 成交数据</h2>
+    <button onclick="testExecutions()">测试成交 API</button>
+    <pre id="executions-result"></pre>
+
+    <h2>4. 账户信息</h2>
+    <button onclick="testAccount()">测试账户 API</button>
+    <pre id="account-result"></pre>
+
+    <script>
+        async function testKlines() {
+            const result = document.getElementById('klines-result');
+            try {
+                const response = await fetch('/api/klines?symbol=XBTUSD&timeframe=1d');
+                const data = await response.json();
+                result.textContent = `✓ 成功! 获取 ${data.length} 条K线数据\n\n前3条:\n` +
+                    JSON.stringify(data.slice(0, 3), null, 2);
+            } catch (error) {
+                result.textContent = '✗ 错误: ' + error.message;
+            }
+        }
+
+        async function testOrders() {
+            const result = document.getElementById('orders-result');
+            try {
+                const response = await fetch('/api/orders/pending');
+                const data = await response.json();
+                result.textContent = `✓ 成功! 获取 ${data.length} 条未成交订单\n\n前3条:\n` +
+                    JSON.stringify(data.slice(0, 3), null, 2);
+            } catch (error) {
+                result.textContent = '✗ 错误: ' + error.message;
+            }
+        }
+
+        async function testExecutions() {
+            const result = document.getElementById('executions-result');
+            try {
+                const response = await fetch('/api/executions');
+                const data = await response.json();
+                result.textContent = `✓ 成功! 获取 ${data.length} 条成交记录\n\n前3条:\n` +
+                    JSON.stringify(data.slice(0, 3), null, 2);
+            } catch (error) {
+                result.textContent = '✗ 错误: ' + error.message;
+            }
+        }
+
+        async function testAccount() {
+            const result = document.getElementById('account-result');
+            try {
+                const response = await fetch('/api/account');
+                const data = await response.json();
+                result.textContent = '✓ 成功! 账户信息:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                result.textContent = '✗ 错误: ' + error.message;
+            }
+        }
+
+        // 自动测试
+        window.onload = () => {
+            console.log('页面加载完成，自动测试API...');
+            testKlines();
+            testOrders();
+            testExecutions();
+            testAccount();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+2025/11/25 17:24:16 正在加载数据...
+2025/11/25 17:24:16 ✓ 加载 klines_XBTUSD_1d.csv: 3714 条记录
+2025/11/25 17:24:16 ⚠ 跳过 klines_ETHUSD_1d.csv: open klines_ETHUSD_1d.csv: no such file or directory
+2025/11/25 17:24:17 ✓ 加载 orders.csv: 43034 条记录
+2025/11/25 17:24:17 ✓ 加载 executions.csv: 171578 条记录
+2025/11/25 17:24:17 🌐 Web服务器启动成功!
+2025/11/25 17:24:17    访问: http://localhost:8080
+2025/11/25 17:24:17 listen tcp :8080: bind: address already in use
+exit status 1

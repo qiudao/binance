@@ -22,8 +22,20 @@
                     <option value="1h">1 Hour</option>
                 </select>
                 <button id="refresh-btn" class="control">🔄 Refresh</button>
+                <button id="diagnose-btn" class="control diagnose-btn">🔍 Diagnose</button>
             </div>
         </header>
+
+        <!-- 诊断面板 -->
+        <div id="diagnose-panel" class="diagnose-panel" style="display: none;">
+            <div class="diagnose-header">
+                <h2>🔍 System Diagnostics</h2>
+                <button id="close-diagnose" class="close-btn">✕</button>
+            </div>
+            <div id="diagnose-content" class="diagnose-content">
+                <p>Running diagnostics...</p>
+            </div>
+        </div>
 
         <!-- 账户信息栏 -->
         <div class="account-bar">
@@ -122,6 +134,7 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/diagnose.js"></script>
     <script src="js/chart.js"></script>
     <script src="js/orders.js"></script>
     <script src="js/app.js"></script>
