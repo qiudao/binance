@@ -1,4 +1,4 @@
-.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet analyze plot dashboard
+.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders analyze plot dashboard
 
 # 默认显示帮助
 .DEFAULT_GOAL := help
@@ -19,6 +19,12 @@ help:
 	@echo "  sync-wallet        增量同步钱包历史"
 	@echo "  ls-wallet          列出所有文件"
 	@echo "  clean-wallet       清理所有文件（需确认）"
+	@echo ""
+	@echo "📋 订单记录 (Orders)"
+	@echo "  download-orders    全量下载订单记录"
+	@echo "  sync-orders        增量同步订单记录"
+	@echo "  ls-orders          列出所有文件"
+	@echo "  clean-orders       清理所有文件（需确认）"
 	@echo ""
 	@echo "📈 数据分析 (Analysis)"
 	@echo "  analyze            生成文本分析报告"
@@ -74,6 +80,32 @@ clean-wallet:
 	@read -p "确认删除? [y/N] " ans; \
 	if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
 		rm -f wallet.csv wallet.csv.bak; \
+		echo "✓ 已清理"; \
+	else \
+		echo "✗ 已取消"; \
+	fi
+
+# ============================================================
+# 订单记录 (Orders)
+# ============================================================
+
+download-orders:
+	@echo "📥 全量下载订单记录..."
+	@go run bitmex_orders.go
+
+sync-orders:
+	@echo "🔄 增量同步订单记录..."
+	@go run bitmex_orders.go --update
+
+ls-orders:
+	@echo "📄 订单记录文件:"
+	@ls -lh orders.csv orders.csv.bak 2>/dev/null || echo "  (无文件)"
+
+clean-orders:
+	@echo "⚠️  警告: 将删除 orders.csv 和 orders.csv.bak"
+	@read -p "确认删除? [y/N] " ans; \
+	if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
+		rm -f orders.csv orders.csv.bak; \
 		echo "✓ 已清理"; \
 	else \
 		echo "✗ 已取消"; \
