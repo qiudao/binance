@@ -36,13 +36,13 @@ sync-trades:
 
 ls-trades:
 	@echo "📄 交易记录文件:"
-	@ls -lh bitmex_executions_*.csv 2>/dev/null || echo "  (无文件)"
+	@ls -lh executions.csv executions.csv.bak 2>/dev/null || echo "  (无文件)"
 
 clean-trades:
-	@echo "⚠️  警告: 将删除所有 bitmex_executions_*.csv"
+	@echo "⚠️  警告: 将删除 executions.csv 和 executions.csv.bak"
 	@read -p "确认删除? [y/N] " ans; \
 	if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-		rm -f bitmex_executions_*.csv; \
+		rm -f executions.csv executions.csv.bak; \
 		echo "✓ 已清理"; \
 	else \
 		echo "✗ 已取消"; \
@@ -62,13 +62,13 @@ sync-wallet:
 
 ls-wallet:
 	@echo "📄 钱包历史文件:"
-	@ls -lh bitmex_wallet_*.csv 2>/dev/null || echo "  (无文件)"
+	@ls -lh wallet.csv wallet.csv.bak 2>/dev/null || echo "  (无文件)"
 
 clean-wallet:
-	@echo "⚠️  警告: 将删除所有 bitmex_wallet_*.csv"
+	@echo "⚠️  警告: 将删除 wallet.csv 和 wallet.csv.bak"
 	@read -p "确认删除? [y/N] " ans; \
 	if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-		rm -f bitmex_wallet_*.csv; \
+		rm -f wallet.csv wallet.csv.bak; \
 		echo "✓ 已清理"; \
 	else \
 		echo "✗ 已取消"; \

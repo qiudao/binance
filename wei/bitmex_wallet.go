@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -122,32 +121,6 @@ func getLastTimestampFromCSV(filename string) (string, error) {
 	}
 
 	return lastTimestamp, nil
-}
-
-// findLatestCSV 查找最新的钱包历史CSV文件
-func findLatestCSV() string {
-	files, err := os.ReadDir(".")
-	if err != nil {
-		return ""
-	}
-
-	var latestFile string
-	var latestTime time.Time
-
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), "bitmex_wallet_") && strings.HasSuffix(file.Name(), ".csv") {
-			info, err := file.Info()
-			if err != nil {
-				continue
-			}
-			if info.ModTime().After(latestTime) {
-				latestTime = info.ModTime()
-				latestFile = file.Name()
-			}
-		}
-	}
-
-	return latestFile
 }
 
 // fetchAllWalletHistory 获取所有钱包历史记录（分页）
@@ -297,17 +270,16 @@ func main() {
 	fmt.Println("✓ API连接成功!\n")
 
 	var startTime string
-	var filename string
+	var filename = "wallet.csv"
 	var appendMode bool
 
 	if *updateMode {
 		// 增量更新模式
 		fmt.Println("运行模式: 增量更新")
 
-		// 查找最新的CSV文件
-		filename = findLatestCSV()
-		if filename == "" {
-			fmt.Println("⚠ 未找到现有CSV文件，将进行全量下载")
+		// 检查 wallet.csv 是否存在
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			fmt.Println("⚠ 未找到 wallet.csv 文件，将进行全量下载")
 			*updateMode = false
 		} else {
 			fmt.Printf("找到现有文件: %s\n", filename)
@@ -332,8 +304,18 @@ func main() {
 
 	if !*updateMode {
 		// 全量下载模式
-		fmt.Println("运行模式: 全量下载\n")
-		filename = fmt.Sprintf("bitmex_wallet_%s.csv", time.Now().Format("20060102_150405"))
+		fmt.Println("运行模式: 全量下载")
+
+		// 如果文件已存在，备份为 .bak
+		if _, err := os.Stat(filename); err == nil {
+			backupName := filename + ".bak"
+			if err := os.Rename(filename, backupName); err != nil {
+				fmt.Printf("⚠ 备份文件失败: %v\n", err)
+			} else {
+				fmt.Printf("✓ 已备份现有文件: %s\n", backupName)
+			}
+		}
+		fmt.Println()
 	}
 
 	// 下载钱包历史记录
