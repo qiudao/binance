@@ -1,11 +1,11 @@
-.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet
+.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet analyze plot dashboard
 
 # 默认显示帮助
 .DEFAULT_GOAL := help
 
 help:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  BitMEX 数据下载工具"
+	@echo "  BitMEX 数据下载与分析工具"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@echo "📊 交易记录 (Trades)"
@@ -19,6 +19,11 @@ help:
 	@echo "  sync-wallet        增量同步钱包历史"
 	@echo "  ls-wallet          列出所有文件"
 	@echo "  clean-wallet       清理所有文件（需确认）"
+	@echo ""
+	@echo "📈 数据分析 (Analysis)"
+	@echo "  analyze            生成文本分析报告"
+	@echo "  plot               生成Python可视化图表（需安装pandas）"
+	@echo "  dashboard          生成HTML交互式仪表板（需安装pandas）"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -73,3 +78,67 @@ clean-wallet:
 	else \
 		echo "✗ 已取消"; \
 	fi
+
+# ============================================================
+# 数据分析 (Analysis)
+# ============================================================
+
+analyze:
+	@echo "📊 生成钱包资金分析报告..."
+	@if [ ! -f wallet.csv ]; then \
+		echo "❌ 错误: 找不到 wallet.csv"; \
+		echo "请先运行: make download-wallet"; \
+		exit 1; \
+	fi
+	@mkdir -p report
+	@./analyze_wallet.sh | tee report/wallet_report.txt
+	@echo ""
+	@echo "✓ 报告已保存: report/wallet_report.txt"
+
+plot:
+	@echo "📈 生成Python可视化图表..."
+	@if [ ! -f wallet.csv ]; then \
+		echo "❌ 错误: 找不到 wallet.csv"; \
+		echo "请先运行: make download-wallet"; \
+		exit 1; \
+	fi
+	@if ! python3 -c "import pandas, matplotlib" 2>/dev/null; then \
+		echo ""; \
+		echo "❌ 缺少依赖: pandas 或 matplotlib"; \
+		echo ""; \
+		echo "安装方法:"; \
+		echo "  sudo apt install python3-pandas python3-matplotlib"; \
+		echo "  或"; \
+		echo "  python3 -m pip install --user pandas matplotlib"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@mkdir -p report
+	@./analyze_wallet.py --save
+	@echo ""
+	@echo "✓ 图表已保存到 report/ 目录:"
+	@ls -lh report/*.png 2>/dev/null || true
+
+dashboard:
+	@echo "📊 生成HTML交互式仪表板..."
+	@if [ ! -f wallet.csv ]; then \
+		echo "❌ 错误: 找不到 wallet.csv"; \
+		echo "请先运行: make download-wallet"; \
+		exit 1; \
+	fi
+	@if ! python3 -c "import pandas" 2>/dev/null; then \
+		echo ""; \
+		echo "❌ 缺少依赖: pandas"; \
+		echo ""; \
+		echo "安装方法:"; \
+		echo "  sudo apt install python3-pandas"; \
+		echo "  或"; \
+		echo "  python3 -m pip install --user pandas"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@mkdir -p report
+	@python3 generate_dashboard.py
+	@echo ""
+	@echo "✓ 已生成: report/wallet_dashboard.html"
+	@echo "  在浏览器中打开查看"
