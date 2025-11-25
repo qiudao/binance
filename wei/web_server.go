@@ -122,7 +122,7 @@ func loadData() {
 
 	// 加载K线数据
 	symbols := []string{"XBTUSD", "ETHUSD"}
-	timeframes := []string{"1d", "1h"}
+	timeframes := []string{"1d"}  // 只加载日线数据
 
 	for _, symbol := range symbols {
 		for _, tf := range timeframes {
@@ -131,6 +131,8 @@ func loadData() {
 				key := fmt.Sprintf("%s_%s", symbol, tf)
 				klinesCache[key] = klines
 				log.Printf("✓ 加载 %s: %d 条记录", filename, len(klines))
+			} else {
+				log.Printf("⚠ 跳过 %s: %v", filename, err)
 			}
 		}
 	}
@@ -139,12 +141,16 @@ func loadData() {
 	if orders, err := loadOrders("orders.csv"); err == nil {
 		ordersCache = orders
 		log.Printf("✓ 加载 orders.csv: %d 条记录", len(orders))
+	} else {
+		log.Printf("❌ 加载 orders.csv 失败: %v", err)
 	}
 
 	// 加载成交数据
 	if execs, err := loadExecutions("executions.csv"); err == nil {
 		executionsCache = execs
 		log.Printf("✓ 加载 executions.csv: %d 条记录", len(execs))
+	} else {
+		log.Printf("❌ 加载 executions.csv 失败: %v", err)
 	}
 }
 

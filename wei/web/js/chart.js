@@ -83,11 +83,11 @@ async function loadOrderMarkers(symbol) {
             if (exec.symbol !== symbol) return;
 
             markers.push({
-                time: exec.time,
+                time: exec.timestampUnix,  // 使用 timestampUnix 字段
                 position: exec.side === 'Buy' ? 'belowBar' : 'aboveBar',
                 color: exec.side === 'Buy' ? '#3fb950' : '#f85149',
                 shape: exec.side === 'Buy' ? 'arrowUp' : 'arrowDown',
-                text: `${exec.side} ${exec.qty} @ ${exec.price.toFixed(2)}`,
+                text: `${exec.side} ${exec.qty}`,
                 size: 1,
             });
         });
