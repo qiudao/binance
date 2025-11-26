@@ -67,13 +67,17 @@ async function loadPositions() {
         const positions = await API.getPositions();
         const container = document.getElementById('positions-container');
 
-        if (positions.length === 0) {
-            container.innerHTML = '<div class="empty-state">No open positions</div>';
+        // 只显示BTC相关的币种
+        const btcPositions = positions.filter(pos =>
+            pos.symbol === 'XBTUSD' || pos.symbol.includes('XBT')
+        );
+
+        if (btcPositions.length === 0) {
+            container.innerHTML = '<div class="empty-state">No BTC positions</div>';
             return;
         }
 
-        container.innerHTML = positions.map(pos => {
-            const pnlClass = pos.unrealizedPnl >= 0 ? 'positive' : 'negative';
+        container.innerHTML = btcPositions.map(pos => {
             const sideClass = pos.side.toLowerCase();
 
             return `
@@ -95,10 +99,6 @@ async function loadPositions() {
                         <span class="label">Current Price:</span>
                         <span>$${Format.price(pos.currentPrice)}</span>
                     </div>
-
-                    <div class="pnl ${pnlClass}">
-                        ${Format.btc(pos.unrealizedPnl)} (${Format.percent(pos.unrealizedPnlPercent)})
-                    </div>
                 </div>
             `;
         }).join('');
@@ -113,16 +113,20 @@ async function loadAccountInfo() {
     try {
         const account = await API.getAccount();
 
+        // 总市值
+        const totalEquity = document.getElementById('total-equity');
+        totalEquity.textContent = Format.btc(account.totalEquity);
+        totalEquity.className = 'value ' + (account.totalEquity >= 0 ? 'positive' : 'negative');
+
+        // 余额
         document.getElementById('balance').textContent = Format.btc(account.balance);
 
-        const todayPnl = document.getElementById('today-pnl');
-        todayPnl.textContent = Format.btc(account.todayPnl) + ' (' + Format.percent(account.todayPnlPercent) + ')';
-        todayPnl.className = 'value ' + (account.todayPnl >= 0 ? 'positive' : 'negative');
+        // 未实现盈亏
+        const unrealizedPnl = document.getElementById('unrealized-pnl');
+        unrealizedPnl.textContent = Format.btc(account.unrealizedPnl);
+        unrealizedPnl.className = 'value ' + (account.unrealizedPnl >= 0 ? 'positive' : 'negative');
 
-        const totalPnl = document.getElementById('total-pnl');
-        totalPnl.textContent = Format.btc(account.totalPnl);
-        totalPnl.className = 'value ' + (account.totalPnl >= 0 ? 'positive' : 'negative');
-
+        // 胜率和交易次数
         document.getElementById('win-rate').textContent = account.winRate.toFixed(1) + '%';
         document.getElementById('total-trades').textContent = account.totalTrades;
 

@@ -62,12 +62,14 @@ type Position struct {
 
 // AccountInfo 账户信息
 type AccountInfo struct {
-	Balance        float64 `json:"balance"`
-	TodayPNL       float64 `json:"todayPnl"`
+	Balance         float64 `json:"balance"`
+	TotalEquity     float64 `json:"totalEquity"`     // 总市值 = 余额 + 未实现盈亏
+	UnrealizedPNL   float64 `json:"unrealizedPnl"`   // 总未实现盈亏
+	TodayPNL        float64 `json:"todayPnl"`
 	TodayPNLPercent float64 `json:"todayPnlPercent"`
-	TotalPNL       float64 `json:"totalPnl"`
-	WinRate        float64 `json:"winRate"`
-	TotalTrades    int     `json:"totalTrades"`
+	TotalPNL        float64 `json:"totalPnl"`
+	WinRate         float64 `json:"winRate"`
+	TotalTrades     int     `json:"totalTrades"`
 }
 
 // 全局数据缓存
@@ -434,14 +436,15 @@ func calculatePositions() []Position {
 
 		// 计算未实现盈亏
 		if pos.EntryPrice > 0 && pos.CurrentPrice > 0 {
-			// 使用绝对值计算，避免双重取反
-			absQty := math.Abs(float64(pos.Qty))
-			pnl := (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice) * absQty
-			pnlPercent := (pos.CurrentPrice/pos.EntryPrice - 1.0) * 100
+			// 反向合约盈亏计算: PNL = 合约数量 × (1/入场价 - 1/当前价)
+			// 注意: 使用带符号的Qty,这样Long/Short的方向自动正确
+			qty := float64(pos.Qty)
+			pnl := qty * (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice)
 
-			// Short仓位盈亏方向相反
+			// 百分比计算
+			pnlPercent := (pos.CurrentPrice/pos.EntryPrice - 1.0) * 100
+			// Short仓位时价格变化方向相反
 			if pos.Side == "Short" {
-				pnl = -pnl
 				pnlPercent = -pnlPercent
 			}
 
@@ -521,8 +524,20 @@ func calculateAccountInfo() AccountInfo {
 
 	todayPNLPercent := (todayPNL / balance) * 100
 
+	// 计算所有持仓的未实现盈亏
+	positions := calculatePositions()
+	var unrealizedPNL float64
+	for _, pos := range positions {
+		unrealizedPNL += pos.UnrealizedPNL
+	}
+
+	// 总市值 = 余额 + 未实现盈亏
+	totalEquity := balance + unrealizedPNL
+
 	return AccountInfo{
 		Balance:         balance,
+		TotalEquity:     totalEquity,
+		UnrealizedPNL:   unrealizedPNL,
 		TodayPNL:        todayPNL,
 		TodayPNLPercent: todayPNLPercent,
 		TotalPNL:        totalPNL,
