@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"sort"
@@ -354,9 +355,12 @@ func handleExecutions(w http.ResponseWriter, r *http.Request) {
 
 func handlePositions(w http.ResponseWriter, r *http.Request) {
 	positions := calculatePositions()
+	log.Printf("Positions API called, returning %d positions", len(positions))
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(positions)
+	if err := json.NewEncoder(w).Encode(positions); err != nil {
+		log.Printf("Error encoding positions: %v", err)
+	}
 }
 
 func handleAccount(w http.ResponseWriter, r *http.Request) {
@@ -368,6 +372,8 @@ func handleAccount(w http.ResponseWriter, r *http.Request) {
 
 // calculatePositions 计算当前仓位
 func calculatePositions() []Position {
+	// 初始化为空数组而不是 nil
+	positions := []Position{}
 	positionsMap := make(map[string]*Position)
 
 	for _, exec := range executionsCache {
@@ -411,8 +417,12 @@ func calculatePositions() []Position {
 			}
 		}
 
-		if totalQty != 0 {
-			pos.EntryPrice = float64(totalQty) / totalCost
+		if totalQty != 0 && totalCost != 0 {
+			entryPrice := float64(totalQty) / totalCost
+			// 检查是否为有效值
+			if !math.IsNaN(entryPrice) && !math.IsInf(entryPrice, 0) && entryPrice > 0 {
+				pos.EntryPrice = entryPrice
+			}
 		}
 
 		// 设置方向
@@ -423,17 +433,25 @@ func calculatePositions() []Position {
 		}
 
 		// 计算未实现盈亏
-		if pos.EntryPrice > 0 {
-			pos.UnrealizedPNL = (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice) * float64(pos.Qty)
-			pos.UnrealizedPNLPercent = (pos.CurrentPrice/pos.EntryPrice - 1.0) * 100
+		if pos.EntryPrice > 0 && pos.CurrentPrice > 0 {
+			pnl := (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice) * float64(pos.Qty)
+			pnlPercent := (pos.CurrentPrice/pos.EntryPrice - 1.0) * 100
+
 			if pos.Side == "Short" {
-				pos.UnrealizedPNL = -pos.UnrealizedPNL
-				pos.UnrealizedPNLPercent = -pos.UnrealizedPNLPercent
+				pnl = -pnl
+				pnlPercent = -pnlPercent
+			}
+
+			// 检查是否为 NaN 或 Inf
+			if !math.IsNaN(pnl) && !math.IsInf(pnl, 0) {
+				pos.UnrealizedPNL = pnl
+			}
+			if !math.IsNaN(pnlPercent) && !math.IsInf(pnlPercent, 0) {
+				pos.UnrealizedPNLPercent = pnlPercent
 			}
 		}
 	}
 
-	var positions []Position
 	for _, pos := range positionsMap {
 		positions = append(positions, *pos)
 	}
