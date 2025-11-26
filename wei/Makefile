@@ -210,12 +210,12 @@ web-server:
 	@echo "   访问: http://localhost:8080"
 	@echo "   按 Ctrl+C 停止服务器"
 	@echo ""
-	@go run web_server.go
+	@go run web_server.go snapshot.go
 
 web-open:
 	@echo "🌐 启动 Web 服务器并打开浏览器..."
 	@(sleep 3 && xdg-open http://localhost:8080 2>/dev/null || open http://localhost:8080 2>/dev/null) &
-	@go run web_server.go
+	@go run web_server.go snapshot.go
 
 web-test:
 	@echo "🔍 测试和诊断 Web 服务器..."
