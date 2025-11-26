@@ -1,4 +1,4 @@
-.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders download-klines sync-klines ls-klines web-server web-open analyze plot dashboard
+.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders download-klines sync-klines ls-klines web-server web-open web-test analyze plot dashboard
 
 # 默认显示帮助
 .DEFAULT_GOAL := help
@@ -34,6 +34,7 @@ help:
 	@echo "🌐 Web界面 (Web Dashboard)"
 	@echo "  web-server         启动Web服务器（端口8080）"
 	@echo "  web-open           启动服务器并在浏览器打开"
+	@echo "  web-test           测试和诊断Web服务器"
 	@echo ""
 	@echo "📈 数据分析 (Analysis)"
 	@echo "  analyze            生成文本分析报告"
@@ -215,3 +216,7 @@ web-open:
 	@echo "🌐 启动 Web 服务器并打开浏览器..."
 	@(sleep 3 && xdg-open http://localhost:8080 2>/dev/null || open http://localhost:8080 2>/dev/null) &
 	@go run web_server.go
+
+web-test:
+	@echo "🔍 测试和诊断 Web 服务器..."
+	@./test_web_server.sh
