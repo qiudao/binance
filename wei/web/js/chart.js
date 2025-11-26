@@ -32,7 +32,7 @@ function initChart() {
         },
     });
 
-    candlestickSeries = chart.addCandlestickSeries({
+    candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
         upColor: '#3fb950',
         downColor: '#f85149',
         borderDownColor: '#f85149',

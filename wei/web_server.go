@@ -434,9 +434,12 @@ func calculatePositions() []Position {
 
 		// 计算未实现盈亏
 		if pos.EntryPrice > 0 && pos.CurrentPrice > 0 {
-			pnl := (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice) * float64(pos.Qty)
+			// 使用绝对值计算，避免双重取反
+			absQty := math.Abs(float64(pos.Qty))
+			pnl := (1.0/pos.EntryPrice - 1.0/pos.CurrentPrice) * absQty
 			pnlPercent := (pos.CurrentPrice/pos.EntryPrice - 1.0) * 100
 
+			// Short仓位盈亏方向相反
 			if pos.Side == "Short" {
 				pnl = -pnl
 				pnlPercent = -pnlPercent

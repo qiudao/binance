@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>简单测试页面</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #fff; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .info { color: #569cd6; }
+        pre { background: #2d2d2d; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Web服务器测试页面</h1>
+    <div id="status"></div>
+    
+    <script>
+        const statusDiv = document.getElementById('status');
+        
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            statusDiv.appendChild(p);
+        }
+        
+        async function runTests() {
+            log('开始测试...', 'info');
+            log('');
+            
+            // 测试账户API
+            log('测试 1: 获取账户信息', 'info');
+            try {
+                const response = await fetch('/api/account');
+                const data = await response.json();
+                log('✓ 账户API正常', 'success');
+                log('账户余额: ' + data.balance + ' BTC', 'info');
+                log('总盈亏: ' + data.totalPnl + ' BTC', 'info');
+            } catch (error) {
+                log('✗ 账户API失败: ' + error.message, 'error');
+            }
+            log('');
+            
+            // 测试仓位API
+            log('测试 2: 获取仓位数据', 'info');
+            try {
+                const response = await fetch('/api/positions');
+                const data = await response.json();
+                log('✓ 仓位API正常', 'success');
+                log('当前持仓数量: ' + data.length, 'info');
+            } catch (error) {
+                log('✗ 仓位API失败: ' + error.message, 'error');
+            }
+            log('');
+            
+            // 测试K线API
+            log('测试 3: 获取K线数据', 'info');
+            try {
+                const response = await fetch('/api/klines?symbol=XBTUSD&timeframe=1d');
+                const data = await response.json();
+                log('✓ K线API正常', 'success');
+                log('K线数据条数: ' + data.length, 'info');
+            } catch (error) {
+                log('✗ K线API失败: ' + error.message, 'error');
+            }
+            log('');
+            
+            // 测试订单API
+            log('测试 4: 获取未成交订单', 'info');
+            try {
+                const response = await fetch('/api/orders/pending');
+                const data = await response.json();
+                log('✓ 订单API正常', 'success');
+                log('未成交订单数量: ' + data.length, 'info');
+            } catch (error) {
+                log('✗ 订单API失败: ' + error.message, 'error');
+            }
+            log('');
+            
+            // 测试成交API
+            log('测试 5: 获取成交记录', 'info');
+            try {
+                const response = await fetch('/api/executions');
+                const data = await response.json();
+                log('✓ 成交API正常', 'success');
+                log('成交记录数量: ' + data.length, 'info');
+            } catch (error) {
+                log('✗ 成交API失败: ' + error.message, 'error');
+            }
+            log('');
+            
+            log('=== 测试完成 ===', 'success');
+            log('');
+            log('如果所有测试都通过，说明后端正常运行。', 'info');
+            log('如果主页面仍然无法显示，可能是：', 'info');
+            log('1. 浏览器缓存问题 - 尝试硬刷新 (Ctrl+Shift+R / Cmd+Shift+R)', 'info');
+            log('2. JavaScript错误 - 按F12打开控制台查看错误信息', 'info');
+            log('3. 静态文件路径问题 - 检查CSS/JS文件是否正确加载', 'info');
+        }
+        
+        // 运行测试
+        runTests();
+    </script>
+</body>
+</html>
