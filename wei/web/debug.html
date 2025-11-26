@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - BitMEX API Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #58a6ff;
+        }
+        .test-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .success {
+            color: #3fb950;
+        }
+        .error {
+            color: #f85149;
+        }
+        pre {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 12px;
+            overflow-x: auto;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 4px;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        .log {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px;
+            border-left: 3px solid #30363d;
+            padding-left: 8px;
+        }
+        .log-info {
+            border-left-color: #58a6ff;
+        }
+        .log-success {
+            border-left-color: #3fb950;
+        }
+        .log-error {
+            border-left-color: #f85149;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 BitMEX Web Server Debug Tool</h1>
+
+    <div class="test-section">
+        <h2>Quick Tests</h2>
+        <button onclick="testAllAPIs()">Test All APIs</button>
+        <button onclick="testKlinesAPI()">Test K-lines API</button>
+        <button onclick="testAccountAPI()">Test Account API</button>
+        <button onclick="testTradingView()">Test TradingView Library</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Results</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+
+        async function testKlinesAPI() {
+            addLog('Testing K-lines API...', 'info');
+            try {
+                const response = await fetch('/api/klines?symbol=XBTUSD&timeframe=1d');
+                addLog(`Response status: ${response.status}`, response.ok ? 'success' : 'error');
+
+                const data = await response.json();
+                addLog(`✓ Received ${data.length} K-line records`, 'success');
+
+                if (data.length > 0) {
+                    addLog(`First candle: ${JSON.stringify(data[0])}`, 'info');
+                    addLog(`Last candle: ${JSON.stringify(data[data.length - 1])}`, 'info');
+                }
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+                addLog(`Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        async function testAccountAPI() {
+            addLog('Testing Account API...', 'info');
+            try {
+                const response = await fetch('/api/account');
+                addLog(`Response status: ${response.status}`, response.ok ? 'success' : 'error');
+
+                const data = await response.json();
+                addLog(`✓ Account data received`, 'success');
+                addLog(`Balance: ${data.balance} BTC`, 'info');
+                addLog(`Total PNL: ${data.totalPnl} BTC`, 'info');
+                addLog(`Win Rate: ${data.winRate}%`, 'info');
+                addLog(`Total Trades: ${data.totalTrades}`, 'info');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOrdersAPI() {
+            addLog('Testing Orders API...', 'info');
+            try {
+                const response = await fetch('/api/orders/pending');
+                const data = await response.json();
+                addLog(`✓ Received ${data.length} pending orders`, 'success');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testExecutionsAPI() {
+            addLog('Testing Executions API...', 'info');
+            try {
+                const response = await fetch('/api/executions');
+                const data = await response.json();
+                addLog(`✓ Received ${data.length} executions`, 'success');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPositionsAPI() {
+            addLog('Testing Positions API...', 'info');
+            try {
+                const response = await fetch('/api/positions');
+                const data = await response.json();
+                addLog(`✓ Received ${data.length} positions`, 'success');
+            } catch (error) {
+                addLog(`✗ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function testTradingView() {
+            addLog('Testing TradingView Library...', 'info');
+            if (typeof LightweightCharts === 'undefined') {
+                addLog('✗ LightweightCharts library not loaded!', 'error');
+                addLog('Trying to load from CDN...', 'info');
+
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js';
+                script.onload = () => {
+                    addLog('✓ TradingView library loaded successfully!', 'success');
+                    addLog(`Version: ${LightweightCharts.version || 'Unknown'}`, 'info');
+                };
+                script.onerror = () => {
+                    addLog('✗ Failed to load TradingView library from CDN', 'error');
+                };
+                document.head.appendChild(script);
+            } else {
+                addLog('✓ LightweightCharts library is loaded', 'success');
+                addLog(`Version: ${LightweightCharts.version || 'Unknown'}`, 'info');
+            }
+        }
+
+        async function testAllAPIs() {
+            clearLog();
+            addLog('=== Starting Full Diagnostic Test ===', 'info');
+            addLog('', 'info');
+
+            // Test browser environment
+            addLog('Browser: ' + navigator.userAgent, 'info');
+            addLog('Online: ' + navigator.onLine, 'info');
+            addLog('Current URL: ' + window.location.href, 'info');
+            addLog('', 'info');
+
+            await testKlinesAPI();
+            addLog('', 'info');
+
+            await testAccountAPI();
+            addLog('', 'info');
+
+            await testOrdersAPI();
+            addLog('', 'info');
+
+            await testExecutionsAPI();
+            addLog('', 'info');
+
+            await testPositionsAPI();
+            addLog('', 'info');
+
+            testTradingView();
+            addLog('', 'info');
+
+            addLog('=== Test Complete ===', 'success');
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            addLog('Page loaded, running automatic tests...', 'info');
+            setTimeout(() => {
+                testAllAPIs();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
