@@ -38,6 +38,12 @@ const API = {
     async getAccount() {
         const response = await fetch(`${API_BASE}/api/account`);
         return response.json();
+    },
+
+    // 获取历史快照
+    async getSnapshot(date) {
+        const response = await fetch(`${API_BASE}/api/snapshot?date=${date}`);
+        return response.json();
     }
 };
 

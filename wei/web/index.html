@@ -26,6 +26,35 @@
             </div>
         </header>
 
+        <!-- 时间旅行控制面板 -->
+        <div class="time-travel-panel" id="time-travel-panel">
+            <div class="time-controls">
+                <button id="prev-month-btn" class="time-btn" title="上一月 (↑)">◀◀</button>
+                <button id="prev-day-btn" class="time-btn" title="前一天 (←)">◀</button>
+                <input type="date" id="date-picker" class="date-input" value="">
+                <button id="next-day-btn" class="time-btn" title="后一天 (→)">▶</button>
+                <button id="next-month-btn" class="time-btn" title="下一月 (↓)">▶▶</button>
+            </div>
+            <div class="play-controls">
+                <button id="play-btn" class="control-btn">▶ 播放</button>
+                <select id="speed-select" class="speed-select">
+                    <option value="500">2x</option>
+                    <option value="1000" selected>1x</option>
+                    <option value="2000">0.5x</option>
+                </select>
+                <button id="pause-btn" class="control-btn" style="display:none;">⏸ 暂停</button>
+                <button id="today-btn" class="control-btn">⏮ 回到今天</button>
+            </div>
+            <div class="time-range">
+                <span class="date-range">时间范围: 2020-05-01 - 2025-11-25</span>
+            </div>
+        </div>
+
+        <!-- 历史模式横幅 -->
+        <div class="history-banner" id="history-banner" style="display: none;">
+            📅 正在查看历史数据: <span id="viewing-date">2020-05-01</span>
+        </div>
+
         <!-- 诊断面板 -->
         <div id="diagnose-panel" class="diagnose-panel" style="display: none;">
             <div class="diagnose-header">
@@ -137,6 +166,7 @@
     <script src="js/diagnose.js"></script>
     <script src="js/chart.js"></script>
     <script src="js/orders.js"></script>
+    <script src="js/time-travel.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

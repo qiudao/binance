@@ -72,6 +72,20 @@ type AccountInfo struct {
 	TotalTrades     int     `json:"totalTrades"`
 }
 
+// DailySnapshot 每日快照数据
+type DailySnapshot struct {
+	Date          string          `json:"date"`           // 查询日期
+	Balance       float64         `json:"balance"`        // 截至该日期的余额
+	TotalEquity   float64         `json:"totalEquity"`    // 总市值
+	UnrealizedPNL float64         `json:"unrealizedPnl"`  // 未实现盈亏
+	BTCPositions  []Position      `json:"btcPositions"`   // BTC持仓
+	TodayOrders   []OrderData     `json:"todayOrders"`    // 当日订单
+	RecentExecs   []ExecutionData `json:"recentExecs"`    // 近期成交
+	KlineData     []KlineData     `json:"klineData"`      // K线数据
+	MinDate       string          `json:"minDate"`        // 最小日期
+	MaxDate       string          `json:"maxDate"`        // 最大日期
+}
+
 // 全局数据缓存
 var (
 	klinesCache     map[string][]KlineData
@@ -91,6 +105,7 @@ func main() {
 	http.HandleFunc("/api/executions", handleExecutions)
 	http.HandleFunc("/api/positions", handlePositions)
 	http.HandleFunc("/api/account", handleAccount)
+	http.HandleFunc("/api/snapshot", handleSnapshot) // 新增: 历史快照API
 
 	// 静态文件服务
 	fs := http.FileServer(http.Dir("./web"))
