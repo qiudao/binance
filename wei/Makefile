@@ -1,4 +1,4 @@
-.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders download-klines sync-klines ls-klines web-server web-open web-test analyze plot dashboard
+.PHONY: help download-trades sync-trades ls-trades clean-trades download-wallet sync-wallet ls-wallet clean-wallet download-orders sync-orders ls-orders clean-orders download-klines sync-klines ls-klines web-server web-open web-test analyze plot dashboard daily-position view-position
 
 # 默认显示帮助
 .DEFAULT_GOAL := help
@@ -40,6 +40,8 @@ help:
 	@echo "  analyze            生成文本分析报告"
 	@echo "  plot               生成Python可视化图表（需安装pandas）"
 	@echo "  dashboard          生成HTML交互式仪表板（需安装pandas）"
+	@echo "  daily-position     计算每日BTC仓位比例（生成CSV）"
+	@echo "  view-position      查看每日仓位分析报告"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
@@ -200,6 +202,17 @@ sync-klines:
 ls-klines:
 	@echo "📄 K线数据文件:"
 	@ls -lh klines_*.csv klines_*.csv.bak 2>/dev/null || echo "  (无文件)"
+
+# ============================================================
+# 每日仓位分析 (Daily Position Analysis)
+# ============================================================
+
+daily-position:
+	@echo "📊 计算每日 BTC 仓位比例..."
+	@go run daily_position.go
+
+view-position:
+	@./view_position.sh
 
 # ============================================================
 # Web界面 (Web Dashboard)
