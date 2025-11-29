@@ -44,6 +44,12 @@ const API = {
     async getSnapshot(date) {
         const response = await fetch(`${API_BASE}/api/snapshot?date=${date}`);
         return response.json();
+    },
+
+    // 获取每日仓位数据
+    async getDailyPosition() {
+        const response = await fetch(`${API_BASE}/api/daily-position`);
+        return response.json();
     }
 };
 

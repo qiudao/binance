@@ -1,6 +1,8 @@
 // TradingView 图表管理
 let chart = null;
 let candlestickSeries = null;
+let positionSeries = null;  // 仓位柱形图
+let equitySeries = null;    // 总市值柱形图
 let currentSymbol = 'XBTUSD';
 let currentTimeframe = '1d';
 
@@ -39,6 +41,49 @@ function initChart() {
         borderUpColor: '#3fb950',
         wickDownColor: '#f85149',
         wickUpColor: '#3fb950',
+        priceScaleId: 'right',
+    });
+
+    // 设置K线图占据上部空间
+    chart.priceScale('right').applyOptions({
+        scaleMargins: {
+            top: 0.05,
+            bottom: 0.35,  // 留出35%给下方的两个柱形图
+        },
+    });
+
+    // 仓位柱形图
+    positionSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
+        color: '#3fb950',
+        priceFormat: {
+            type: 'volume',
+        },
+        priceScaleId: 'position',
+    });
+
+    chart.priceScale('position').applyOptions({
+        scaleMargins: {
+            top: 0.70,
+            bottom: 0.18,
+        },
+    });
+
+    // 总市值柱形图
+    equitySeries = chart.addSeries(LightweightCharts.HistogramSeries, {
+        color: '#58a6ff',
+        priceFormat: {
+            type: 'price',
+            precision: 4,
+            minMove: 0.0001,
+        },
+        priceScaleId: 'equity',
+    });
+
+    chart.priceScale('equity').applyOptions({
+        scaleMargins: {
+            top: 0.85,
+            bottom: 0.02,
+        },
     });
 
     // 响应式调整
@@ -69,6 +114,11 @@ async function loadChartData(symbol, timeframe) {
         candlestickSeries.setData(klines);
         console.log('  ✓ K线图渲染完成');
 
+        // 加载每日仓位数据
+        console.log('  - 加载每日仓位数据...');
+        await loadDailyPositionData();
+        console.log('  ✓ 仓位和市值图渲染完成');
+
         // 加载订单标记
         console.log('  - 加载订单标记...');
         await loadOrderMarkers(symbol);
@@ -77,6 +127,39 @@ async function loadChartData(symbol, timeframe) {
     } catch (error) {
         console.error('  ❌ 加载K线失败:', error);
         alert('加载K线数据失败: ' + error.message);
+    }
+}
+
+// 加载每日仓位数据
+async function loadDailyPositionData() {
+    try {
+        const dailyPositions = await API.getDailyPosition();
+
+        if (!dailyPositions || dailyPositions.length === 0) {
+            console.log('  没有每日仓位数据');
+            return;
+        }
+
+        // 转换仓位数据 - Long绿色, Short红色, Flat灰色
+        const positionData = dailyPositions.map(d => ({
+            time: d.time,
+            value: Math.abs(d.positionQty),
+            color: d.side === 'Long' ? '#3fb950' :
+                   d.side === 'Short' ? '#f85149' : '#484f58',
+        }));
+
+        // 转换总市值数据 - 蓝色系
+        const equityData = dailyPositions.map(d => ({
+            time: d.time,
+            value: d.totalEquity,
+            color: '#58a6ff',
+        }));
+
+        positionSeries.setData(positionData);
+        equitySeries.setData(equityData);
+
+    } catch (error) {
+        console.error('加载每日仓位数据失败:', error);
     }
 }
 

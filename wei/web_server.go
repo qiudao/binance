@@ -72,6 +72,17 @@ type AccountInfo struct {
 	TotalTrades     int     `json:"totalTrades"`
 }
 
+// DailyPositionData 每日仓位数据
+type DailyPositionData struct {
+	Time          int64   `json:"time"`          // Unix时间戳
+	PositionQty   int     `json:"positionQty"`   // 仓位数量
+	Price         float64 `json:"price"`         // BTC价格
+	Balance       float64 `json:"balance"`       // 钱包余额(BTC)
+	PositionValue float64 `json:"positionValue"` // 仓位价值(BTC)
+	TotalEquity   float64 `json:"totalEquity"`   // 总市值(BTC)
+	Side          string  `json:"side"`          // Long/Short/Flat
+}
+
 // DailySnapshot 每日快照数据
 type DailySnapshot struct {
 	Date          string          `json:"date"`           // 查询日期
@@ -88,9 +99,10 @@ type DailySnapshot struct {
 
 // 全局数据缓存
 var (
-	klinesCache     map[string][]KlineData
-	ordersCache     []OrderData
-	executionsCache []ExecutionData
+	klinesCache        map[string][]KlineData
+	ordersCache        []OrderData
+	executionsCache    []ExecutionData
+	dailyPositionCache []DailyPositionData
 )
 
 func main() {
@@ -105,14 +117,18 @@ func main() {
 	http.HandleFunc("/api/executions", handleExecutions)
 	http.HandleFunc("/api/positions", handlePositions)
 	http.HandleFunc("/api/account", handleAccount)
-	http.HandleFunc("/api/snapshot", handleSnapshot) // 新增: 历史快照API
+	// http.HandleFunc("/api/snapshot", handleSnapshot)        // 新增: 历史快照API (暂时禁用)
+	http.HandleFunc("/api/daily-position", handleDailyPosition) // 每日仓位数据
 
 	// 静态文件服务
 	fs := http.FileServer(http.Dir("./web"))
 	http.Handle("/", fs)
 
 	// 启动服务器
-	port := "8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	log.Printf("🌐 Web服务器启动成功!")
 	log.Printf("   访问: http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, enableCORS(http.DefaultServeMux)))
@@ -169,6 +185,14 @@ func loadData() {
 		log.Printf("✓ 加载 executions.csv: %d 条记录", len(execs))
 	} else {
 		log.Printf("❌ 加载 executions.csv 失败: %v", err)
+	}
+
+	// 加载每日仓位数据
+	if positions, err := loadDailyPosition("daily_position.csv"); err == nil {
+		dailyPositionCache = positions
+		log.Printf("✓ 加载 daily_position.csv: %d 条记录", len(positions))
+	} else {
+		log.Printf("❌ 加载 daily_position.csv 失败: %v", err)
 	}
 }
 
@@ -293,6 +317,51 @@ func loadExecutions(filename string) ([]ExecutionData, error) {
 	return executions, nil
 }
 
+// loadDailyPosition 加载每日仓位CSV文件
+func loadDailyPosition(filename string) ([]DailyPositionData, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var positions []DailyPositionData
+	for i, record := range records {
+		if i == 0 {
+			continue // 跳过表头: Date,PositionQty,Price,Balance,PositionValue,PositionRatio,Side
+		}
+
+		// 解析日期 (格式: 2020-05-02)
+		timestamp, _ := time.Parse("2006-01-02", record[0])
+		positionQty, _ := strconv.Atoi(record[1])
+		price, _ := strconv.ParseFloat(record[2], 64)
+		balance, _ := strconv.ParseFloat(record[3], 64)
+		positionValue, _ := strconv.ParseFloat(record[4], 64)
+		side := record[6]
+
+		// 总市值 = 钱包余额 + 仓位价值
+		totalEquity := balance + positionValue
+
+		positions = append(positions, DailyPositionData{
+			Time:          timestamp.Unix(),
+			PositionQty:   positionQty,
+			Price:         price,
+			Balance:       balance,
+			PositionValue: positionValue,
+			TotalEquity:   totalEquity,
+			Side:          side,
+		})
+	}
+
+	return positions, nil
+}
+
 // API Handlers
 
 func handleKlines(w http.ResponseWriter, r *http.Request) {
@@ -385,6 +454,11 @@ func handleAccount(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(account)
+}
+
+func handleDailyPosition(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(dailyPositionCache)
 }
 
 // calculatePositions 计算当前仓位
